@@ -1,0 +1,1134 @@
+openapi: "3.0.0"
+info:
+  title: Авито API для служб доставки
+  version: "1.0"
+
+tags:
+  - name: AvitoDeliveryTariffApi
+    x-displayName: API управления направлениями/тарифами/сроками доставки
+    description: |
+      Методы представленные в данном разделе позволяют службам доставки самостоятельно управлять
+        1. Доступностью направлений доставки
+        2. Стоимостью доставки по каждому из направлений
+        3. Сроками доставки по каждому из направлений
+
+      ## Используемые термины:
+
+      - **Пункт выдачи заказов (ПВЗ)** - место, в котором в зависимости от списка предоставляемых услуг пользователь может сдать/получить/вернуть посылку
+
+
+      - **Тэг направления** - является полем объекта ПВЗ, которое используется для объединения нескольких ПВЗ, имеющих одинаковые тэги в группу для последующего определения связей между данными группами.
+
+        Допускается распределять тэги по ПВЗ любым образом, при этом наиболее распространенным критерием для тегирования является географическая близость ПВЗ друг к другу.
+
+      - **Тарифная зона доставки** - список алгоритмов и параметров для расчета стоимости различных услуг, которые будут оказаны в процессе доставки в соответствии с подписанным договором.
+        Итоговая сумма стоимостей по всем услугам перечисленным в тарифной зоне равна расчетной стоимости, которую Авито заплатит службе доставки за выдачу отправления.
+
+      - **Направление доставки** - объект определяющий возможность доставки из группы ПВЗ, объединенных одним тэгом направления, в группу ПВЗ, объединенных другим теэгом направления. При этом направление так же определяет условия, на которых доставка будет осуществляться: тарифную зону и сроки доставки
+
+      - **Тарифный план** - список всех возможных направлений доставки, действующий на определенном интервале времени (например, до подписания договора об изменении тарифов)
+
+
+      ## Диаграмма связей между используемыми объектами:
+
+      <img src="https://svgshare.com/i/VA7.svg" />
+
+      ## Сценарии использования на примере доставки ПВЗ - ПВЗ (также доступна доставка ПВЗ - Полигон_доставки - курьерская доставка):
+
+      ### Инсталляция (первое добавление службой доставки тарифов):
+        1. Создать тариф
+        2. Добавить ПВЗ
+        3. Добавленные ПВЗ появляются на карте доставки Авито в момент начала действия тарифного плана.
+
+      ### Добавление нового ПВЗ *(тэг направления доставки уже описан в тарифном плане)*:
+        1. Обновить список ПВЗ в тарифном плане. Новый список полностью заменяет старый; если какой-то ПВЗ в новом списке не присутствует, он считается недоступным для этого тарифа.
+        2. Добавленный ПВЗ появляется на карте доставки Авито спустя небольшой интервал времени
+
+      ### Изменение других параметров тарифного плана
+
+      Для изменения направлений доставки, тарифных зон или тэгов направлений нужно создать новый тариф.
+
+
+  - name: AvitoDeliveryTariifZone
+    x-displayName: Тарифная зона
+    description: |
+
+      Тарифная зона позволяет расчитать цену доставки.
+
+      На текущий момент поддерживаются следующие услуги:
+        - **Доставка**(`DELIVERY`) - услуга непосредственного перемещения посылки из одной точки в другую
+          на текущий момент поддерживаются 2 механики тарификации услуги доставки:
+          - `WEIGHT` - относительно веса отправления
+          - `DIMENSION` - относительно размеров отправления
+        - **Страхование**(`INSURANCE`) - услуга страхования посылки, на случай её утери или порчи. На текущий момент расчитывается как процент от объявленной стоимости отправления
+
+      Тарифные зоны являются частью тарифного плана; изменять их можно только через добавление нового тарифа.
+
+
+  - name: AvitoDeliveryDirection
+    x-displayName: Направление доставки
+    description: |
+      Направление доставки представляет из себя контракт, указывающий на то из каких тэгов адресных объектов в какие возможна доставка, а так же описывает условия, на которых данная услуга предоставляется.
+
+      **Тип направления** (`type`) - описывает типы адресных объектов, которые связывает данное направление.
+      На текущий момент для добавления возможны только направления связывающие пункты самовывоза - `pickup2pickup`
+
+      Направления доставки также являются неотъемлемой частью тарифного плана.
+
+  - name: AvitoDeliveryTariff
+    x-displayName: Тарифный план
+    description: |
+
+      При добавлении тарифного плана необходимо обеспечить:
+        - В одном тарифном плане два тэга направления не могут быть связаны между собой больше чем в одним [направлением доставки](#tag/AvitoDeliveryDirection).
+        - Используемые [тарифные зоны](#tag/AvitoDeliveryTariifZone) должны присутствовать тарифе
+
+  - name: AvitoDeliveryPickupPoint
+    x-displayName: Пункт выдачи заказов (ПВЗ)
+    description: |
+
+      Ограничения и проверки:
+        - Каждый пункт самовывоза должен иметь тэг направления, который также должен существовать в рамках тарифного плана, к которому данный ПВЗ добавляется.
+        - Тэг направления может быть изменен только через создание нового [тарифного плана](#tag/AvitoDeliveryTariff/paths/~1tariffs/post) и добавление в него списка ПВЗ с новыми тэгами направлений
+
+#  - name: AvitoDeliveryParcelCodes
+#    x-displayName: Коды выдачи заказов
+#    description: |
+#      Код выдачи заказа предназначен для снижения количество потенциально возможных мошеннических действий при получении отправления
+#
+#      Код генерируется на стороне Авито. В момент прибытия отправления в ПВЗ пересылается получателю посылки.
+#
+#      Механика работы:
+#
+#      1. Успешная выдачи посылки (получатель назвал правильный код выдачи):
+#
+#      <img src="https://svgshare.com/i/MHF.svg" />
+#
+#
+#
+#      2. Неуспешная попытка выдачи (получатель 5 раз назвал неверный код выдачи - перегенерация кода выдачи):
+#
+#      <img src="https://svgshare.com/i/MJH.svg" />
+#
+#
+#
+#  - name: AvitoDeliveryParcelIntegrityVerification
+#    x-displayName: Проверка целостности отправления
+#    description: |
+#      Описание проверки целостности отправления
+#
+#  - name: AvitoDeliveryOrderInfo
+#    x-displayName: Информация по отправлению
+#    description: |
+#      Описание информации по отправлению
+
+
+paths:
+
+
+#  /checkParcelCode/{avito-delivery-order-id}:
+#    parameters:
+#      - $ref: "#/components/parameters/authHeader"
+#      - $ref: '#/components/parameters/avitoDeliveryOrderId'
+#    post:
+#      tags: [AvitoDeliveryParcelCodes]
+#      summary: Проверка кода выдачи заказа
+#      security:
+#        - Client Credentials: [ ]
+#      requestBody:
+#        content:
+#          application/json:
+#            schema:
+#              type: object
+#              properties:
+#                orderId:
+#                  description: Номер заказа в Авито
+#                  type: string
+#                  example: 123455435
+#      responses:
+#        200:
+#          description: Результат успешно выполненного запроса на создание тарифного плана
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  success:
+#                    type: boolean
+#                    title: статус
+#                    example: false
+#                    description: |
+#                      статус проверки кода выдаи:
+#                      * `true` - был передан верный код выдачи, посылку можно выдавать получателю
+#                      * `false` - был передан ошибочный код выдачи, посылку выдавать нельзя. Нужно идти читать поле message из error
+#                  error:
+#                    $ref: '#/components/schemas/AvitoDeliveryError'
+#        400:
+#          $ref: '#/components/responses/BadRrequest'
+#        401:
+#          $ref: '#/components/responses/Unauthorized'
+#        500:
+#          $ref: '#/components/responses/InternalServerError'
+
+  /tariffs:
+    parameters:
+      - $ref: "#/components/parameters/authHeader"
+    post:
+      tags: [AvitoDeliveryTariff]
+      summary: Добавление тарифного плана
+      security:
+        - Client Credentials: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvitoDeliveryTariff-new'
+      responses:
+        200:
+          description: Результат успешно выполненного запроса на создание тарифного плана
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tariffId:
+                    type: string
+                    format: uuid
+                    example: cc082d6a-1796-46b8-a471-e0c79a340afe
+        400:
+          $ref: '#/components/responses/BadRrequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+
+  /tariffs/{tariff-id}:
+    parameters:
+      - $ref: "#/components/parameters/authHeader"
+      - $ref: '#/components/parameters/tariffId'
+    get:
+      tags: [AvitoDeliveryTariff]
+      summary: Получение тарифа
+      security:
+        - Client Credentials: [ ]
+      responses:
+        200:
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvitoDeliveryTariff'
+
+
+  /tariffs/:
+    parameters:
+      - $ref: "#/components/parameters/authHeader"
+    get:
+      tags: [AvitoDeliveryTariff]
+      summary: Получение списка тарифов
+      security:
+        - Client Credentials: [ ]
+      responses:
+        200:
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tariffs:
+                    type: array
+                    title: Список id тарифов
+                    description: Список id тарифных планов попадающих под условия выборки
+                    items:
+                      type: string
+                      example:
+                        - 3935417f-2d4d-46c2-b74e-36331663e64a
+                        - RR35417f-2d4d-46c2-b74e-36331663eZZZ
+                  meta:
+                    $ref: '#/components/schemas/AvitoDeliveryPaginationMeta'
+
+  /tariffs/{tariff-id}/pickup-points:
+    parameters:
+      - $ref: "#/components/parameters/authHeader"
+      - $ref: '#/components/parameters/tariffId'
+    post:
+      tags: [AvitoDeliveryPickupPoint]
+      summary: Привязка пунктов самовывоза к тарифу. Заменяет ранее привязанные ПВЗ
+      security:
+        - Client Credentials: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/AvitoDeliveryPickupPoint'
+      responses:
+        200:
+          description: Успех
+        400:
+          $ref: '#/components/responses/BadRrequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+
+#  /parcel/integrity-verification:
+#    parameters:
+#      - $ref: "#/components/parameters/authHeader"
+#    post:
+#      tags: [AvitoDeliveryParcelIntegrityVerification]
+#      summary: Проверка целостности отправления
+#      security:
+#        - Client Credentials: [ ]
+#      requestBody:
+#        content:
+#          application/json:
+#            schema:
+#              $ref: '#/components/schemas/AvitoDelivery-integrityVerification'
+#      responses:
+#        200:
+#          $ref: '#/components/responses/SuccessAdded'
+#        400:
+#          $ref: '#/components/responses/BadRrequest'
+#        401:
+#          $ref: '#/components/responses/Unauthorized'
+#        500:
+#          $ref: '#/components/responses/InternalServerError'
+#
+#
+#  /order/getInfoByOrderId:
+#    parameters:
+#      - $ref: "#/components/parameters/authHeader"
+#    post:
+#      tags: [AvitoDeliveryOrderInfo]
+#      summary: Получение дополнительной информации о заказе
+#      security:
+#        - Client Credentials: [ ]
+#      requestBody:
+#        content:
+#          application/json:
+#            schema:
+#              $ref: '#/components/schemas/AvitoDelivery-orderIdentifierList'
+#      responses:
+#        200:
+#          description: Информация об отправлениях
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/AvitoDelivery-orderInfoList'
+#        400:
+#          $ref: '#/components/responses/BadRrequest'
+#        401:
+#          $ref: '#/components/responses/Unauthorized'
+#        500:
+#          $ref: '#/components/responses/InternalServerError'
+
+components:
+
+  parameters:
+    tariffId:
+      name: tariff-id
+      in: path
+      description: Идентификатор тарифного плана
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    pickupPointId:
+      name: pickup-point-id
+      in: path
+      description: Идентификатор ПВЗ
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    deliveryAriaId:
+      name: delivery-aria-id
+      in: path
+      description: |
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    avitoDeliveryOrderId:
+      name: avito-delivery-order-id
+      in: path
+      description: |
+      required: true
+      schema:
+        type: string
+        format: uuid
+    authHeader:
+      name: Authorization
+      in: header
+      required: true
+      example: "Bearer ACCESS_TOKEN"
+      description: Токен для авторизации
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/AvitoDeliveryError'
+    BadRrequest:
+      description: bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/AvitoDeliveryValidationError'
+    InternalServerError:
+      description: internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/AvitoDeliveryError'
+
+    SuccessAdded:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              result:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: cc5828c4-e6bc-49be-a22a-e3d69cbb93c1
+
+  securitySchemes:
+    Client Credentials:
+      type: oauth2
+      description: Это API использует OAuth 2 с механизмом client_credentials. Используйте его для доступа к возможностям своей личной учетной записи.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.avito.ru/token
+          scopes: {}
+    Authorization Code:
+      type: oauth2
+      description: Это API использует OAuth 2 с механизмом authorization_code. Используйте его для доступа к данным других пользователей при разработке стороннего приложения.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://avito.ru/oauth
+          tokenUrl: https://api.avito.ru/token
+          scopes:
+            "messenger:read": Чтение сообщений в мессенджере Авито
+            "messenger:write": Модифицирование сообщений в мессенджере Авито
+            "user_balance:read": Получение баланса пользователя
+            "job:write": Изменение объявлений вертикали Работа
+            "job:cv": Получение информации резюме
+            "job:negotiations": Получение информации об откликах на вакансии
+            "user_operations:read": Получение истории операций пользователя
+            "user:read": Получение информации о пользователе
+            "autoload:reports": Получение отчетов Автозагрузки
+            "items:info": Получение информации об объявлениях
+            "items:apply_vas": Применение дополнительных услуг
+            "short_term_rent:read": Получение информации об объявлениях краткосрочной аренды
+            "short_term_rent:write": Изменение объявлений краткосрочной аренды
+            "autoteka:reports": Получение и создание отчетов Автотеки
+            "autoteka:previews": Получение и создание превью Автотеки
+            "stats:read": Получение статистики объявлений
+
+
+
+  schemas:
+    AvitoDeliveryPaginationMeta:
+      description: Тут дешевая пагинация спроектированная с учетом того, что в базе много записей, но фактически нет паралельного пишущих и читающих клиентов
+
+
+    AvitoDeliveryError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          title: код ошибки
+          description: код ошибки
+          type: string
+          example: fail
+        message:
+          title: описание ошибки
+          description: человекопонятное описание ошибки
+          type: string
+          example: something went wrong
+
+    AvitoDeliveryValidationError:
+      type: object
+      properties:
+        code:
+          title: код ошибки
+          description: код ошибки
+          type: string
+          example: fail
+        message:
+          title: описание ошибки
+          description: человекопонятное описание ошибки
+          type: string
+          example: validation error
+        fields:
+          description: Поля в которых возникла ошибка
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FieldError'
+
+    FieldError:
+      required:
+        - code
+        - message
+      type: object
+      properties:
+        code:
+          description: Код ошибки
+          type: string
+        message:
+          description: Описание ошибки
+          type: string
+
+
+    AvitoDeliveryTariff:
+      allOf:
+        - type: object
+          properties:
+            tariffId:
+              title: id тарифного плана
+              description: id тарифного плана на строне Авито
+              type: string
+              format: uuid
+              example: XX35417f-2d4d-46c2-b74e-36331663e64a
+        - $ref: '#/components/schemas/AvitoDeliveryTariff-new'
+
+
+    AvitoDeliveryGeometry-Point:
+      title: geoPoint
+      description: Гео точка в формате [`longitude(широта)`,`latitude(долгота)`]
+      minItems: 2
+      maxItems: 2
+      example: [55.7373497,37.5331523]
+      type: array
+      items:
+        type: number
+
+
+    AvitoDeliveryTariff-new:
+      description: Тарифный план
+      type: object
+      properties:
+        name:
+          title: Название тарифного плана
+          description: Человеко-понятное название тарифного плана
+          type: string
+          example: Быстрый от 2020-02-10
+        deliveryProviderTariffId:
+          title: id тарифного плана на стороне службы доставки
+          description: |
+            Идентификатор тарифного плана на стороне службы доставки - должен быть уникален.
+          type: string
+          example: FAST_FROM_2020-02-10
+        directions:
+          title: Список направлений доставки в тарифном плане
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryDirection'
+        tariffZones:
+          title: Список тарифных зон
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryTariffZone'
+
+
+    AvitoDeliveryDirection:
+      description: Описание направлений доставки
+      type: object
+      properties:
+        deliveryProviderDirectionId:
+          title: id направления доставки
+          description: Идентификатор направления доставки на стороне службы доставки
+          type: string
+          example: 12-34
+        name:
+          title: Название направления доставки
+          description: Человеко-понятное название направления (будет использоваться в интерфейсной части)
+          type: string
+          example: Направление 12-34
+        type:
+          description: Тип объектов, которые связывает данное направление
+          type: string
+          example: pickup2pickup
+        directionTagFrom:
+          title: Тэг направления "откуда"
+          description: Тэг направления адресных объектов (ПВЗ) из которых доступна доставка на условиях приведенных в данном направление
+          example: moscow
+          type: string
+        directionTagTo:
+          title: Список тэгов направлений "куда"
+          example: kazan
+          type: string
+        deliveryProviderTariffZoneid:
+          description: Идентификатор [тарифной зоны](#tag/AvitoDeliveryTariffZone); ссылается на один из объектов в поле tariffZones
+          type: string
+          example: 42
+        minTerm:
+          description: Минимальный срок доставки в днях
+          type: integer
+          example: 1
+        maxTerm:
+          description: Максимальный срок доставки в днях
+          type: integer
+          example: 2
+
+
+    AvitoDeliveryRestrictionZone:
+      description: Ограничения ПВЗ по приему и выдаче посылок (например, по весу, габаритам или стоимости)
+      type: object
+      properties:
+        maxWeight:
+          description: Максимальный вес, который можно перевозить по данному тарифу
+          type: integer
+          example: 1000
+        maxDimensions:
+          description: Максимальные ограничения по габаритам
+          type: array
+          items:
+            type: integer
+            example: [200, 50, 30]
+        maxDeclaredCost:
+          description: Максимальные ограничения по объявленной стоимости
+          type: integer
+          example: 1000
+
+
+    AvitoDeliveryTariffZone:
+      title: Тарифная зона
+      description: Описание одной тарифной зоны
+      type: object
+      properties:
+        name:
+          description: Человеко-понятное название тарифной зоны (будет использоваться в интефейсной части)
+          type: string
+          example: Тарифная зона 42
+        deliveryProviderZoneId:
+          description: Id тарифной зоны на стороне службы доствки
+          type: string
+          example: 42
+        items:
+          description: |
+            Модели расчета цены для каждой из услуг.
+            <br>
+            Стоимость доставки складывается из стоимостей описанных здесь услуг.
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/AvitoDeliveryTariffZone-ServiceDelivery'
+              - $ref: '#/components/schemas/AvitoDeliveryTariffZone-ServiceInshrance'
+          example:
+            - {
+              serviceName: "DELIVERY",
+              calculationMechanic: "GAP_TO_COST",
+              chargeableParameter: "WEIGHT",
+              values: [
+                {"upTo":3000, "cost":50000},
+                {"upTo":7000, "cost":60000},
+                {"upTo":10000, "cost":70000},
+                {"upTo":20000, "cost":90000},
+              ]
+            }
+            - {
+              serviceName: "INSURANCE",
+              calculationMechanic: "GAP_TO_PERCENT",
+              chargeableParameter: "DECLARED_COST",
+              values: [
+                {"upTo":10000, "percent":1},
+                {"upTo":1000000, "percent":1.5},
+              ]
+            }
+
+
+    AvitoDeliveryTariffZone-ServiceDelivery:
+      description: Описание модели тарификации какой либо из услуг доставки
+      title: Доставка
+      type: object
+      discriminator:
+        propertyName: chargeableParameter
+        mapping:
+          WEIGHT: '#/components/schemas/AvitoDeliveryTariffZone-ServiceDeliveryByWeight'
+          DIMENSION: '#/components/schemas/AvitoDeliveryTariffZone-ServiceDeliveryByDimension'
+      properties:
+        serviceName:
+          type: string
+          description: Услуга доставки
+          enum:
+            - DELIVERY
+          example: DELIVERY
+        calculationMechanic:
+          type: string
+          description: |
+            Механика расчета стоимости <br />
+            `GAP_TO_COST` - Механизм расчета при котором в зависимости от параметров отправления подбирается минимально возможное значение параметра `chargeableParameter` и соответствующая ему стоимость доставки
+          enum:
+            - GAP_TO_COST
+        chargeableParameter:
+          type: string
+          description: |
+            Параметр, относительно которого расчитывается стоимость доставки отправления
+            <br />
+              `WEIGHT` - Расчет относительно веса отправления<br />
+              `DIMENSION` - Расчет относительно габаритов отправления<br />
+          enum:
+            - WEIGHT
+            - DIMENSION
+          example: WEIGHT
+
+    AvitoDeliveryTariffZone-ServiceDeliveryByDimension:
+      description: Описание модели тарификации какой либо из услуг доставки
+      allOf:
+        - $ref: '#/components/schemas/AvitoDeliveryTariffZone-ServiceDelivery'
+        - type: object
+          properties:
+            value:
+              description: Список диапазонов вестов и соответствующих им стоимостей
+              type: array
+              items:
+                type: object
+                properties:
+                  upTo:
+                    description: Отсортированный список 3-х измерений, в которые должно поместиться отправление, что бы стоимость его доставки была протарифицирована в соответствии со значением указанным поле cost
+                    type: array
+                    items:
+                      type: integer
+                    example: [10,20,30]
+                  cost:
+                    description: Стоимость доставки отправления (в копейках) соответвующая диапазону габаритов от предыдущего значения upTo до текущего
+                    type: integer
+                    example: 2000
+
+
+    AvitoDeliveryTariffZone-ServiceDeliveryByWeight:
+      description: Описание модели тарификации какой либо из услуг доставки
+      allOf:
+        - $ref: '#/components/schemas/AvitoDeliveryTariffZone-ServiceDelivery'
+        - type: object
+          properties:
+            value:
+              description: Список диапазонов вестов и соответствующих им стоимостей
+              type: array
+              items:
+                type: object
+                properties:
+                  upTo:
+                    description: Верхняя граница веса отправления(в граммах), до которой (не включительно) услуга доставки отправления не превышающего данный вес будет тарифицироваться в соответствии со значением указанным в поле cost
+                    type: integer
+                    example: 2000
+                  cost:
+                    description: Стоимость доставки отправления (в копейках) соответвющая диапазону весов от предыдущего значения upTo до текущего
+                    type: integer
+                    example: 2000
+
+
+    AvitoDeliveryTariffZone-ServiceInshrance:
+      description: Описание модели тарификации какой либо из услуг доставки
+      title: Страховка
+      type: object
+      properties:
+        serviceName:
+          type: string
+          enum:
+            - INSURANCE
+          example: INSURANCE
+        calculationMechanic:
+          description: Механика расчета стоимости
+          type: string
+          enum:
+            - GAP_TO_PERCENT
+        chargeableParameter:
+          type: string
+          enum:
+            - DECLARED_COST
+          example: DECLARED_COST
+        value:
+          description: Список значений для рассчета страховки.
+          type: array
+          items:
+            type: object
+            properties:
+              upTo:
+                description: Верхняя граница объявленной стоимости отправления (в копейках), до которой (не включительно) услуга страховки отправления не превышающего данную стоимость будет тарифицироваться в соответствии со значением указанным в поле percent
+                type: integer
+                example: 10000
+              percent:
+                description: Процент от объявленной стоимости по которому рассчитывается стоимость страховки отправления в диапазоне от предыдущего upTo до текущего
+                type: number
+                example: 1
+
+
+    AvitoDeliveryLocationDescription:
+      description: Адрес
+      type: object
+      properties:
+        country:
+          description: Страна
+          type: string
+          example: Российская федерация
+        region:
+          description: Регион/область
+          type: string
+          example: республика Татарстан
+        locality:
+          description: Населенный пункт
+          type: string
+          example: Набережные Челны
+        localityType:
+          description: Тип населенного пункта
+          type: string
+          example: город
+        subRegion:
+          description: Субрегион
+          type: string
+          example: Набережные Челны
+        subRegionType:
+          description: Тип субрегиона - муниципальный район/городской округ
+          type: string
+          example: городской округ
+        street:
+          description: Улица
+          type: string
+          example: ленина
+        house:
+          description: Дом
+          type: string
+          example: 2
+        building:
+          description: Строение
+          type: string
+          example: 2
+        housing:
+          description: Корпус
+          type: string
+          example: 4
+        porch:
+          description: Подъезд
+          type: string
+          example: 3
+        floor:
+          description: Этаж
+          type: integer
+          example: 1
+        room:
+          description: Квартира (офис).
+          type: string
+          example: 4
+        zipCode:
+          description: Почтовый индекс
+          type: string
+          example: 243446
+        lat:
+          description: Географическая широта, в градусах.
+          type: number
+          example: 52.3295026
+        lng:
+          description: Географическая долгота, в градусах.
+          type: number
+          example: 55.697951
+
+
+    AvitoDeliveryDayTimeInterval:
+      description: Интервал времени внутри одного дня `hh:mm:ss+hh:mm/hh:mm:ss+hh:mm`
+      type: string
+      example: 09:00:00+03:00/12:00:00+03:00
+
+
+    AvitoDeliveryWorkTime:
+      description: Рабочее время в каждый из дней недели
+      type: object
+      properties:
+        mon:
+          description: Расписание работы в понедельник
+          type: array
+          example: ['09:00:00+03:00/12:00:00+03:00', '13:00:00+03:00/30:00:00+03:00']
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryDayTimeInterval'
+        tue:
+          description: Расписание работы в вторник
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryDayTimeInterval'
+        wed:
+          description: Расписание работы в среду
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryDayTimeInterval'
+        thu:
+          description: Расписание работы в четверг
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryDayTimeInterval'
+        fri:
+          description: Расписание работы в пятницу
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryDayTimeInterval'
+        sat:
+          description: Расписание работы в субботу
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryDayTimeInterval'
+        sun:
+          description: Расписание работы в воскресенье
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryDayTimeInterval'
+
+
+    AvitoDelivery-directionTag:
+      title: Тэг направления
+      description: |
+        Тэг направления доставки, к которой принадлежит данный пункт самовывоза.
+        <br />
+        Используется для связки в [направлениях](#tag/AvitoDeliveryDirection) поля:
+          - `directionTagFrom`
+          - `directionTagTo`
+      type: string
+      example: moscow-2020-12-12
+
+    AvitoDelivery-addServicesSuccessResponse:
+      description: Результат успешно выполненного запроса добавления услуг доставки !! переделать в k v
+      type: object
+      properties:
+        seviceName:
+          title: Тип сарвиса доставки
+          description: Тип добавляемого сервиса доставки
+          type: string
+          enum:
+            - intake
+            - return
+            - delivery
+          example: intake
+        seviceId:
+          title: Id сервиса доставки
+          description: Id добавленного сервиса доставки
+          type: string
+          format: uuid
+          example: 0785e957-7d7c-436b-9a58-e267c106e849
+
+    AvitoDelivery-addIntakeServiceSuccessResponse:
+      type: object
+      properties:
+        intakeServiceId:
+          type: string
+          format: uuid
+
+    AvitoDeliveryPickupPoint:
+      description: Пункт выдачи заказов (ПВЗ), на котором можно получить/сдать посылку
+      title: Пункт выдачи заказов (ПВЗ)
+      type: object
+      properties:
+        deliveryProviderId:
+          title: id ПВЗ в службе доставки
+          description: уникальный идентификатор ПВЗ на стороне службы доставки
+          type: string
+          example: 1234-dffg
+        name:
+          title: Название пункта самовывоза
+          description: Человеко-понятное название пункта самовывоза (будет использоваться в интефейсной части)
+          type: string
+          example: 1234-dffg
+        address:
+          $ref: '#/components/schemas/AvitoDeliveryLocationDescription'
+        phones:
+          description: Список номеров телефонов
+          type: array
+          items:
+            type: string
+            example: +791XXXXXXX
+        itinerary:
+          description: Описание как пройти
+          type: string
+          example: Выход из последнего вагона, сначала прямо потом налево
+        photos:
+          description: Список ссылок на фотографии
+          type: array
+          items:
+            type: string
+            example: https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png
+        directionTag:
+          $ref: '#/components/schemas/AvitoDelivery-directionTag'
+        deliveryProviderTariffId:
+          title: id тарифного плана на стороне службы доставки
+          description: Идентификатор тарифного плана, к которому будет прикреплен данный ПВЗ
+          type: string
+          example: 12
+        services:
+          description: Доступные в этом ПВЗ услуги. Забор (intake), выдача (delivery), возврат (return)
+          type: array
+          items:
+            type: string
+            enum: [intake, return, delivery]
+        schedule:
+          $ref: '#/components/schemas/AvitoDeliveryWorkTime'
+        restriction:
+          $ref: '#/components/schemas/AvitoDeliveryRestrictionZone'
+
+    AvitoDelivery-orderIdentifier:
+      type: object
+      properties:
+        avitoId:
+          description: Присваивается на стороне Авито и передается в службу доставки при создании заказа
+          title: Id заказа в Авито
+          type: integer
+          example: 987547235473249087
+
+
+
+
+    AvitoDelivery-orderIdentifierList:
+      title: Список Id заказов Авито
+      type: array
+      items:
+        title: Id заказа на стороне Авито
+        type: integer
+        example: 987547235473249087
+
+
+    AvitoDelivery-timstamp:
+      type: integer
+      example: 1612372037
+
+    AvitoDelivery-integrityVerification:
+      description: Информация о результате проверки комплектности отправления на определенном этапе движения заказа
+      title: Проверка комплектности отправления
+      type: object
+      properties:
+        orderIdentifier:
+          $ref: '#/components/schemas/AvitoDelivery-orderIdentifier'
+        state:
+          description: |
+            Этап движения заказа, на котором проходит проверка
+            <br />
+            `DELIVERY_SENDING` - Проверка при приёме отправления у продавца<br />
+            `DELIVERY_RECEIVING` - Проверка при выдаче отправления покупателю<br />
+            `RETURN_RECEIVING` - Проверка при выдаче отказного отправления продавцу<br />
+          title: Этап проверки заказа
+          type: string
+          enum:
+            - DELIVERY_SENDING
+            - DELIVERY_RECEIVING
+            - RETURN_RECEIVING
+          example: RETURN_RECEIVING
+        verificationStatus:
+          description: |
+            Статус проверки целостности
+            <br />
+            `SUCCESS` - Проверка целостности прошла успешно<br />
+            `FAIL` - Проверка целостности прошла НЕуспешно<br />
+            `SKIP` - Проверка целостности не проводилась<br />
+          title: Статус проверки
+          type: string
+          enum:
+            - SUCCESS
+            - FAIL
+            - SKIP
+          example: SKIP
+        comment:
+          description: Комментарий сотрудника проводившего проверку целостности. Может использоваться для того, чтобы описать в чем конкретно была проблема при проверке целостности
+          title: Комментарий
+          type: string
+          example: Шарф был дырявый
+        verificationTime:
+          description: Временая метка проведения операции проверки целостности
+          title: Временна́я метка
+          allOf:
+            - $ref: '#/components/schemas/AvitoDelivery-timstamp'
+
+
+    AvitoDelivery-orderInfoList:
+      description: Дополнительная информация об отправлении
+      title: Информация об отправлении
+      type: array
+      items:
+        $ref: '#/components/schemas/AvitoDelivery-parcelInfo'
+
+
+
+
+    AvitoDelivery-parcelInfo:
+      description: Дополнительная информация об отправлении
+      title: Информация об отправлении
+      properties:
+        orderIdentifier:
+          $ref: '#/components/schemas/AvitoDelivery-orderIdentifier'
+        orderInfo:
+          title: Информация о заказе
+          type: object
+          properties:
+            items:
+              description: Описание товаров, которые находятся в посылке
+              title: Товары
+              type: array
+              items:
+                $ref: '#/components/schemas/AvitoDelivery-itemInfo'
+        error:
+          $ref: '#/components/schemas/AvitoDeliveryError'
+
+
+
+    AvitoDelivery-itemInfo:
+      description: Детальная информация о товаре
+      title: Товар
+      type: object
+      properties:
+        title:
+          title: Название товара
+          type: string
+          example: Фикус
+        description:
+          title: Детальное описание товара
+          type: string
+          example: Комнатное растение
+        breadcrumbs:
+          title: Список категорий
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                title: Название категории
+                type: string
+                example: Бытовая электроника
+        imagesUrls:
+          title: Изображения товара
+          type: object
+          properties:
+            listing:
+              description: Фотография, которая отображается на странице поиска
+              title: Главная фотография
+              type: string
+              example: https://37.img.avito.st/image/1/yFf5RrayZL7P76a75W2mHAHlZLhZ52Y
+            list:
+              description: Список ссылок на все фотографии товара
+              title: Список ссылок на фотографии в объявлении
+              type: array
+              items:
+                title: Ссылка на фотографию из объявления
+                type: string
+                example: https://37.img.avito.st/image/1/yFf5RrayZL7P76a75W2mHAHlZLhZ52Y
