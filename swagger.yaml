@@ -191,10 +191,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  tariffId:
+                  taskId:
                     type: string
-                    format: uuid
-                    example: cc082d6a-1796-46b8-a471-e0c79a340afe
+                    title: id задачи на добавление заказа
+                    description: По данному номеру можно получить статус добавления тарифа или ошибки добавления, в случае если тариф не добавился
+                    example: 1233432
         400:
           $ref: '#/components/responses/BadRrequest'
         401:
@@ -203,22 +204,22 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
 
-  /tariffs/{tariff-id}:
-    parameters:
-      - $ref: "#/components/parameters/authHeader"
-      - $ref: '#/components/parameters/tariffId'
-    get:
-      tags: [AvitoDeliveryTariff]
-      summary: Получение тарифа
-      security:
-        - Client Credentials: [ ]
-      responses:
-        200:
-          description: Успешный ответ
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AvitoDeliveryTariff'
+#  /tariffs/{tariff-id}:
+#    parameters:
+#      - $ref: "#/components/parameters/authHeader"
+#      - $ref: '#/components/parameters/tariffId'
+#    get:
+#      tags: [AvitoDeliveryTariff]
+#      summary: Получение тарифа
+#      security:
+#        - Client Credentials: [ ]
+#      responses:
+#        200:
+#          description: Успешный ответ
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/AvitoDeliveryTariff'
 
 
   /tariffs/:
@@ -249,6 +250,7 @@ paths:
                   meta:
                     $ref: '#/components/schemas/AvitoDeliveryPaginationMeta'
 
+
   /tariffs/{tariff-id}/pickup-points:
     parameters:
       - $ref: "#/components/parameters/authHeader"
@@ -267,7 +269,40 @@ paths:
                 $ref: '#/components/schemas/AvitoDeliveryPickupPoint'
       responses:
         200:
-          description: Успех
+          description: Результат успешно выполненного запроса на обновление пунктов выдачи
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  taskId:
+                    type: string
+                    title: id задачи на обновление пунктов выдачи
+                    description: По данному номеру можно получить статус задачи на обновление пунктов выдачи, и список ошибок по ПВЗ обновление которые завершилось ошбкой
+                    example: 1233432
+        400:
+          $ref: '#/components/responses/BadRrequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+
+  /task/{task-id}:
+    parameters:
+      - $ref: "#/components/parameters/authHeader"
+      - $ref: '#/components/parameters/tariffId'
+    get:
+      summary: Получение текущего статуса и результата выполнения задачи
+      security:
+        - Client Credentials: [ ]
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvitoDeliveryAddTariffTask'
         400:
           $ref: '#/components/responses/BadRrequest'
         401:
@@ -519,6 +554,30 @@ components:
               example: XX35417f-2d4d-46c2-b74e-36331663e64a
         - $ref: '#/components/schemas/AvitoDeliveryTariff-new'
 
+
+    AvitoDeliveryAddTariffTask:
+      title: Задача
+      description: Асинхронно выполняемая задача
+      type: object
+      properties:
+        id:
+          title: id задачи
+          type: string
+        createdAt:
+          title: Дата создания задачи
+          description: Дата создания задачи в формате Unix time
+          example: 1617137871
+        status:
+          title: Статус задачи
+          enum:
+            - waiting
+            - processing
+            - completed
+        errors:
+          title: Список ошибок возникших при выполнении задачи
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryError'
 
     AvitoDeliveryGeometry-Point:
       title: geoPoint
