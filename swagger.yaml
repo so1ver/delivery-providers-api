@@ -605,9 +605,9 @@ components:
         status:
           title: Статус задачи
           enum:
-            - waiting
             - processing
-            - completed
+            - success
+            - failed
         errors:
           title: Список ошибок возникших при выполнении задачи
           type: array
@@ -630,9 +630,9 @@ components:
         status:
           title: Статус задачи
           enum:
-            - waiting
             - processing
-            - completed
+            - success
+            - failed
         tariffId:
           title: Id добавленного тарифа
           description: Id добавленного тарифа
