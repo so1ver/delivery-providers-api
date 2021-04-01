@@ -251,6 +251,31 @@ paths:
                     $ref: '#/components/schemas/AvitoDeliveryPaginationMeta'
 
 
+  /tariffs/tasks/{task-id}:
+    parameters:
+      - $ref: "#/components/parameters/authHeader"
+      - $ref: '#/components/parameters/taskId'
+    get:
+      tags: [AvitoDeliveryTariff]
+      summary: Получение текущего статуса и результата выполнения задачи на добавление тарифа
+      security:
+        - Client Credentials: [ ]
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvitoDeliveryAddTariffTask'
+        400:
+          $ref: '#/components/responses/BadRrequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+
+
   /tariffs/{tariff-id}/pickup-points:
     parameters:
       - $ref: "#/components/parameters/authHeader"
@@ -288,12 +313,14 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
 
-  /task/{task-id}:
+  /tariffs/{tariff-id}/pickup-points/tasks/{task-id}:
     parameters:
       - $ref: "#/components/parameters/authHeader"
       - $ref: '#/components/parameters/tariffId'
+      - $ref: '#/components/parameters/taskId'
     get:
-      summary: Получение текущего статуса и результата выполнения задачи
+      tags: [AvitoDeliveryPickupPoint]
+      summary: Получение текущего статуса и результата выполнения задачи на добавление/обновление списка ПВЗ
       security:
         - Client Credentials: [ ]
       responses:
@@ -369,6 +396,15 @@ components:
       name: tariff-id
       in: path
       description: Идентификатор тарифного плана
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    taskId:
+      name: task-id
+      in: path
+      description: Id задачи
       required: true
       schema:
         type: string
