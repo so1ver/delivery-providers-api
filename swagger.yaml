@@ -222,33 +222,33 @@ paths:
 #                $ref: '#/components/schemas/AvitoDeliveryTariff'
 
 
-  /tariffs/:
-    parameters:
-      - $ref: "#/components/parameters/authHeader"
-    get:
-      tags: [AvitoDeliveryTariff]
-      summary: Получение списка тарифов
-      security:
-        - Client Credentials: [ ]
-      responses:
-        200:
-          description: Успешный ответ
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  tariffs:
-                    type: array
-                    title: Список id тарифов
-                    description: Список id тарифных планов попадающих под условия выборки
-                    items:
-                      type: string
-                      example:
-                        - 3935417f-2d4d-46c2-b74e-36331663e64a
-                        - RR35417f-2d4d-46c2-b74e-36331663eZZZ
-                  meta:
-                    $ref: '#/components/schemas/AvitoDeliveryPaginationMeta'
+#  /tariffs/:
+#    parameters:
+#      - $ref: "#/components/parameters/authHeader"
+#    get:
+#      tags: [AvitoDeliveryTariff]
+#      summary: Получение списка тарифов
+#      security:
+#        - Client Credentials: [ ]
+#      responses:
+#        200:
+#          description: Успешный ответ
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  tariffs:
+#                    type: array
+#                    title: Список id тарифов
+#                    description: Список id тарифных планов попадающих под условия выборки
+#                    items:
+#                      type: string
+#                      example:
+#                        - 3935417f-2d4d-46c2-b74e-36331663e64a
+#                        - RR35417f-2d4d-46c2-b74e-36331663eZZZ
+#                  meta:
+#                    $ref: '#/components/schemas/AvitoDeliveryPaginationMeta'
 
 
   /tariffs/tasks/{task-id}:
@@ -313,10 +313,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
 
-  /tariffs/{tariff-id}/pickup-points/tasks/{task-id}:
+  /tariffs/pickup-points/tasks/{task-id}:
     parameters:
       - $ref: "#/components/parameters/authHeader"
-      - $ref: '#/components/parameters/tariffId'
       - $ref: '#/components/parameters/taskId'
     get:
       tags: [AvitoDeliveryPickupPoint]
@@ -329,7 +328,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AvitoDeliveryAddTariffTask'
+                $ref: '#/components/schemas/AvitoDeliveryAddPickupPointsTask'
         400:
           $ref: '#/components/responses/BadRrequest'
         401:
@@ -591,6 +590,31 @@ components:
         - $ref: '#/components/schemas/AvitoDeliveryTariff-new'
 
 
+    AvitoDeliveryAddPickupPointsTask:
+      title: Задача
+      description: Асинхронно выполняемая задача
+      type: object
+      properties:
+        id:
+          title: id задачи
+          type: string
+        createdAt:
+          title: Дата создания задачи
+          description: Дата создания задачи в формате Unix time
+          example: 1617137871
+        status:
+          title: Статус задачи
+          enum:
+            - waiting
+            - processing
+            - completed
+        errors:
+          title: Список ошибок возникших при выполнении задачи
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryError'
+
+
     AvitoDeliveryAddTariffTask:
       title: Задача
       description: Асинхронно выполняемая задача
@@ -609,6 +633,11 @@ components:
             - waiting
             - processing
             - completed
+        tariffId:
+          title: Id добавленного тарифа
+          description: Id добавленного тарифа
+          type: string
+          example: 2312
         errors:
           title: Список ошибок возникших при выполнении задачи
           type: array
