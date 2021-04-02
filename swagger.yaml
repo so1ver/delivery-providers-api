@@ -175,6 +175,7 @@ paths:
       - $ref: "#/components/parameters/authHeader"
     post:
       tags: [AvitoDeliveryTariff]
+      operationId: addTariffTask
       summary: Добавление тарифного плана
       security:
         - Client Credentials: [ ]
@@ -194,8 +195,9 @@ paths:
                   taskId:
                     type: string
                     title: id задачи на добавление заказа
-                    description: По данному номеру можно получить статус добавления тарифа или ошибки добавления, в случае если тариф не добавился
+                    description: По данному номеру можно [получить](#operation/getAddTariffTask) статус добавления тарифа и ошибки добавления, в случае если тариф не добавился
                     example: 1233432
+
         400:
           $ref: '#/components/responses/BadRrequest'
         401:
@@ -257,6 +259,7 @@ paths:
       - $ref: '#/components/parameters/taskId'
     get:
       tags: [AvitoDeliveryTariff]
+      operationId: getAddTariffTask
       summary: Получение текущего статуса и результата выполнения задачи на добавление тарифа
       security:
         - Client Credentials: [ ]
@@ -282,6 +285,7 @@ paths:
       - $ref: '#/components/parameters/tariffId'
     post:
       tags: [AvitoDeliveryPickupPoint]
+      operationId: addPickupPoints
       summary: Привязка пунктов самовывоза к тарифу. Заменяет ранее привязанные ПВЗ
       security:
         - Client Credentials: [ ]
@@ -303,7 +307,7 @@ paths:
                   taskId:
                     type: string
                     title: id задачи на обновление пунктов выдачи
-                    description: По данному номеру можно получить статус задачи на обновление пунктов выдачи, и список ошибок по ПВЗ обновление которые завершилось ошбкой
+                    description: По данному номеру можно [получить](#operation/getAddPickupPointsTask) статус задачи на обновление пунктов выдачи, и список ошибок по ПВЗ обновление которые завершилось ошбкой
                     example: 1233432
         400:
           $ref: '#/components/responses/BadRrequest'
@@ -319,6 +323,7 @@ paths:
       - $ref: '#/components/parameters/taskId'
     get:
       tags: [AvitoDeliveryPickupPoint]
+      operationId: getAddPickupPointsTask
       summary: Получение текущего статуса и результата выполнения задачи на добавление/обновление списка ПВЗ
       security:
         - Client Credentials: [ ]
