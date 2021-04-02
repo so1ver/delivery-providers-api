@@ -175,6 +175,7 @@ paths:
       - $ref: "#/components/parameters/authHeader"
     post:
       tags: [AvitoDeliveryTariff]
+      operationId: addTariffTask
       summary: Добавление тарифного плана
       security:
         - Client Credentials: [ ]
@@ -191,10 +192,12 @@ paths:
               schema:
                 type: object
                 properties:
-                  tariffId:
+                  taskId:
                     type: string
-                    format: uuid
-                    example: cc082d6a-1796-46b8-a471-e0c79a340afe
+                    title: id задачи на добавление заказа
+                    description: По данному номеру можно [получить](#operation/getAddTariffTask) статус добавления тарифа и ошибки добавления, в случае если тариф не добавился
+                    example: 1233432
+
         400:
           $ref: '#/components/responses/BadRrequest'
         401:
@@ -203,51 +206,78 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
 
-  /tariffs/{tariff-id}:
+#  /tariffs/{tariff-id}:
+#    parameters:
+#      - $ref: "#/components/parameters/authHeader"
+#      - $ref: '#/components/parameters/tariffId'
+#    get:
+#      tags: [AvitoDeliveryTariff]
+#      summary: Получение тарифа
+#      security:
+#        - Client Credentials: [ ]
+#      responses:
+#        200:
+#          description: Успешный ответ
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/AvitoDeliveryTariff'
+
+
+#  /tariffs/:
+#    parameters:
+#      - $ref: "#/components/parameters/authHeader"
+#    get:
+#      tags: [AvitoDeliveryTariff]
+#      summary: Получение списка тарифов
+#      security:
+#        - Client Credentials: [ ]
+#      responses:
+#        200:
+#          description: Успешный ответ
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  tariffs:
+#                    type: array
+#                    title: Список id тарифов
+#                    description: Список id тарифных планов попадающих под условия выборки
+#                    items:
+#                      type: string
+#                      example:
+#                        - 3935417f-2d4d-46c2-b74e-36331663e64a
+#                        - RR35417f-2d4d-46c2-b74e-36331663eZZZ
+#                  meta:
+#                    $ref: '#/components/schemas/AvitoDeliveryPaginationMeta'
+
+
+  /tariffs/tasks/{task-id}:
     parameters:
       - $ref: "#/components/parameters/authHeader"
-      - $ref: '#/components/parameters/tariffId'
+      - $ref: '#/components/parameters/taskId'
     get:
       tags: [AvitoDeliveryTariff]
-      summary: Получение тарифа
+      operationId: getAddTariffTask
+      summary: Получение текущего статуса и результата выполнения задачи на добавление тарифа
       security:
         - Client Credentials: [ ]
       responses:
         200:
-          description: Успешный ответ
+          description: success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AvitoDeliveryTariff'
+                $ref: '#/components/schemas/AvitoDeliveryAddTariffTask'
+        400:
+          $ref: '#/components/responses/BadRrequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/InternalServerError'
 
 
-  /tariffs/:
-    parameters:
-      - $ref: "#/components/parameters/authHeader"
-    get:
-      tags: [AvitoDeliveryTariff]
-      summary: Получение списка тарифов
-      security:
-        - Client Credentials: [ ]
-      responses:
-        200:
-          description: Успешный ответ
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  tariffs:
-                    type: array
-                    title: Список id тарифов
-                    description: Список id тарифных планов попадающих под условия выборки
-                    items:
-                      type: string
-                      example:
-                        - 3935417f-2d4d-46c2-b74e-36331663e64a
-                        - RR35417f-2d4d-46c2-b74e-36331663eZZZ
-                  meta:
-                    $ref: '#/components/schemas/AvitoDeliveryPaginationMeta'
 
   /tariffs/{tariff-id}/pickup-points:
     parameters:
@@ -255,6 +285,7 @@ paths:
       - $ref: '#/components/parameters/tariffId'
     post:
       tags: [AvitoDeliveryPickupPoint]
+      operationId: addPickupPoints
       summary: Привязка пунктов самовывоза к тарифу. Заменяет ранее привязанные ПВЗ
       security:
         - Client Credentials: [ ]
@@ -267,7 +298,42 @@ paths:
                 $ref: '#/components/schemas/AvitoDeliveryPickupPoint'
       responses:
         200:
-          description: Успех
+          description: Результат успешно выполненного запроса на обновление пунктов выдачи
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  taskId:
+                    type: string
+                    title: id задачи на обновление пунктов выдачи
+                    description: По данному номеру можно [получить](#operation/getAddPickupPointsTask) статус задачи на обновление пунктов выдачи, и список ошибок по ПВЗ обновление которые завершилось ошбкой
+                    example: 1233432
+        400:
+          $ref: '#/components/responses/BadRrequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+
+  /tariffs/pickup-points/tasks/{task-id}:
+    parameters:
+      - $ref: "#/components/parameters/authHeader"
+      - $ref: '#/components/parameters/taskId'
+    get:
+      tags: [AvitoDeliveryPickupPoint]
+      operationId: getAddPickupPointsTask
+      summary: Получение текущего статуса и результата выполнения задачи на добавление/обновление списка ПВЗ
+      security:
+        - Client Credentials: [ ]
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvitoDeliveryAddPickupPointsTask'
         400:
           $ref: '#/components/responses/BadRrequest'
         401:
@@ -334,6 +400,15 @@ components:
       name: tariff-id
       in: path
       description: Идентификатор тарифного плана
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    taskId:
+      name: task-id
+      in: path
+      description: Id задачи
       required: true
       schema:
         type: string
@@ -519,6 +594,60 @@ components:
               example: XX35417f-2d4d-46c2-b74e-36331663e64a
         - $ref: '#/components/schemas/AvitoDeliveryTariff-new'
 
+
+    AvitoDeliveryAddPickupPointsTask:
+      title: Задача
+      description: Асинхронно выполняемая задача
+      type: object
+      properties:
+        id:
+          title: id задачи
+          type: string
+        createdAt:
+          title: Дата создания задачи
+          description: Дата создания задачи в формате Unix time
+          example: 1617137871
+        status:
+          title: Статус задачи
+          enum:
+            - processing
+            - success
+            - failed
+        errors:
+          title: Список ошибок возникших при выполнении задачи
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryError'
+
+
+    AvitoDeliveryAddTariffTask:
+      title: Задача
+      description: Асинхронно выполняемая задача
+      type: object
+      properties:
+        id:
+          title: id задачи
+          type: string
+        createdAt:
+          title: Дата создания задачи
+          description: Дата создания задачи в формате Unix time
+          example: 1617137871
+        status:
+          title: Статус задачи
+          enum:
+            - processing
+            - success
+            - failed
+        tariffId:
+          title: Id добавленного тарифа
+          description: Id добавленного тарифа
+          type: string
+          example: 2312
+        errors:
+          title: Список ошибок возникших при выполнении задачи
+          type: array
+          items:
+            $ref: '#/components/schemas/AvitoDeliveryError'
 
     AvitoDeliveryGeometry-Point:
       title: geoPoint
