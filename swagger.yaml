@@ -59,7 +59,7 @@ tags:
         - **Доставка**(`DELIVERY`) - услуга непосредственного перемещения посылки из одной точки в другую
           на текущий момент поддерживаются 2 механики тарификации услуги доставки:
           - `WEIGHT` - относительно веса отправления
-          - `DIMENSION` - относительно размеров отправления
+          - `DIMENSIONS` - относительно размеров отправления
         - **Страхование**(`INSURANCE`) - услуга страхования посылки, на случай её утери или порчи. На текущий момент расчитывается как процент от объявленной стоимости отправления
 
       Тарифные зоны являются частью тарифного плана; изменять их можно только через добавление нового тарифа.
@@ -802,7 +802,7 @@ components:
         propertyName: chargeableParameter
         mapping:
           WEIGHT: '#/components/schemas/AvitoDeliveryTariffZone-ServiceDeliveryByWeight'
-          DIMENSION: '#/components/schemas/AvitoDeliveryTariffZone-ServiceDeliveryByDimension'
+          DIMENSIONS: '#/components/schemas/AvitoDeliveryTariffZone-ServiceDeliveryByDimension'
       properties:
         serviceName:
           type: string
@@ -823,10 +823,10 @@ components:
             Параметр, относительно которого расчитывается стоимость доставки отправления
             <br />
               `WEIGHT` - Расчет относительно веса отправления<br />
-              `DIMENSION` - Расчет относительно габаритов отправления<br />
+              `DIMENSIONS` - Расчет относительно габаритов отправления<br />
           enum:
             - WEIGHT
-            - DIMENSION
+            - DIMENSIONS
           example: WEIGHT
 
     AvitoDeliveryTariffZone-ServiceDeliveryByDimension:
