@@ -741,7 +741,7 @@ components:
           type: array
           items:
             type: integer
-            example: [200, 50, 30]
+            example: 200, 50, 30
         maxDeclaredCost:
           description: Максимальные ограничения по объявленной стоимости
           type: integer
@@ -846,7 +846,7 @@ components:
                     type: array
                     items:
                       type: integer
-                    example: [10,20,30]
+                    example: 10,20,30
                   cost:
                     description: Стоимость доставки отправления (в копейках) соответвующая диапазону габаритов от предыдущего значения maxDimensions до текущего
                     type: integer
@@ -967,6 +967,10 @@ components:
           description: Квартира (офис).
           type: string
           example: 4
+        fias:
+          description: ФИАС идентификатор населенного пункта в котором расположен ПВЗ
+          type: string
+          example: 0c5b2444-70a0-4932-980c-b4dc0d3f02b5
         zipCode:
           description: Почтовый индекс
           type: string
@@ -984,7 +988,7 @@ components:
     AvitoDeliveryDayTimeInterval:
       description: Интервал времени внутри одного дня `hh:mm:ss+hh:mm/hh:mm:ss+hh:mm`
       type: string
-      example: 09:00:00+03:00/12:00:00+03:00
+      example: 09:00:00/12:00:00
 
 
     AvitoDeliveryWorkTime:
@@ -994,7 +998,7 @@ components:
         mon:
           description: Расписание работы в понедельник
           type: array
-          example: ['09:00:00+03:00/12:00:00+03:00', '13:00:00+03:00/30:00:00+03:00']
+          example: ['09:00:00/12:00:00', '13:00:00/19:00:00']
           items:
             $ref: '#/components/schemas/AvitoDeliveryDayTimeInterval'
         tue:
