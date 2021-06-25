@@ -170,6 +170,137 @@ paths:
 #        500:
 #          $ref: '#/components/responses/InternalServerError'
 
+  /delivery/order/status:
+    parameters:
+      - $ref: '#/components/parameters/authHeader'
+    post:
+      tags:
+        - Delivery
+      summary: Метод для добавления нового статуса заказа
+      description: |
+        Метод передачи статуса заказа от службы доставки в Авито <br />
+        В случае если по заказу один статус передается несколько раз, фиксируется только первая попытака передачи статуса.
+        При этом, не смотря на то, что последующие попытки не фиксируются возвращается успешный ответ <br />
+        В случае если по заказу передан статус переход в который невозможен вернется 200 http код, при этом в поле будет указано то, что переход не был осуществлен
+
+      security:
+        - Client Credentials: []
+      operationId: setOrderStatus
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverySetStatusReply'
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvitoDeliveryValidationError'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          description: ServerError
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InternalServerError'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverySetOrderStatusRequest'
+        required: true
+
+
+
+  /delivery/order/properties:
+    parameters:
+      - $ref: '#/components/parameters/authHeader'
+    post:
+      tags:
+        - Delivery
+      summary: Метод для добавления физических свойст заказ, полученых на стороне служюбы доставки
+      description: |
+        Необходимо передать те пераметры заказа, которые были получны службой доставки после фактического измерения. <br />
+        Важно, что передаются именно те параметры заказа по кторым происходит расчет стоимости его доставки. <br />
+        В случае повторой передачи параметров заказа, новые данные записаны не будут, но вернется 200й http код <br />
+      security:
+        - Client Credentials: []
+      operationId: setOrderProperties
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverySetOrderPropertiesReply'
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvitoDeliveryValidationError'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          description: ServerError
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InternalServerError'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverySetOrderPropertiesRequest'
+        required: true
+
+
+  /delivery/order/realAddress:
+    parameters:
+      - $ref: '#/components/parameters/authHeader'
+    post:
+      tags:
+        - Delivery
+      summary: Фактический адрес получения/вручения посылки
+      description: |
+        Необходимо передать адрес фактической выдачи/получения заказа<br />
+        В случае повторой передачи параметров заказа, новые данные записаны не будут, но вернется 200й http код <br />
+      security:
+        - Client Credentials: []
+      operationId: setOrderRealAddress
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverySetOrderPropertiesReply'
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvitoDeliveryValidationError'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          description: ServerError
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InternalServerError'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverySeRealAddresseRequest'
+        required: true
+
+
   /tariffs:
     parameters:
       - $ref: "#/components/parameters/authHeader"
@@ -528,6 +659,152 @@ components:
 
 
   schemas:
+    DeliverySetStatusReply:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/AvitoDeliveryError'
+        data:
+          type: object
+          properties:
+            status:
+              title: статус сохранения статуса
+              description: <br />
+                `success` - статус успешно добавлен <br />
+                `duplicate` - статус уже передавался до этого <br />
+              enum:
+                - success
+                - duplicate
+                - failed
+
+
+    DeliverySetOrderStatusRequest:
+      type: object
+      properties:
+        orderId:
+          $ref: '#/components/schemas/AvitoDelivery-orderId'
+        status:
+          title: статус заказа
+          description: <br />
+             `DIRECT_ROUTE_RECEIVED` - получен службой доставки от продавца на прямом движении <br />
+             `DIRECT_ROUTE_IN_TANSIT` - начал движение от продавца к покупателю <br />
+             `DIRECT_ROUTE_ON_DELIVERY` - прибыл в место вручения покупателю <br />
+             `DIRECT_ROUTE_DELIVERED` - покупатель принял заказ. (терминальный статус) <br />
+             `DIRECT_ROUTE_DENIED` - покупатель отказался от заказа <br />
+             `DIRECT_ROUTE_EXPIRED` - истек срок хранения в ПВЗ доставки <br />
+             `BACK_ROUTE_IN_TRANSIT` - начал обратное движение из ПВЗ покупателя в ПВЗ продавца <br />
+             `BACK_ROUTE_ON_DELIVERY` - получен в ПВЗ продавца <br />
+             `BACK_ROUTE_DELIVERED` - продавец получил отправление (терминальный статус) <br />
+             `BACK_ROUTE_ROUTE_DENIED` - продавец отказался от получения отправления <br />
+             `BACK_ROUTE_DESTROYED` -  утилизирован, так как не был востребован продавцом (терминальный статус)<br />
+             `LOST` - утерян (терминальный статус)  <br />
+          enum:
+              - DIRECT_ROUTE_RECEIVED
+              - DIRECT_ROUTE_IN_TANSIT
+              - DIRECT_ROUTE_ON_DELIVERY
+              - DIRECT_ROUTE_DELIVERED
+              - DIRECT_ROUTE_DENIED
+              - DIRECT_ROUTE_EXPIRED
+              - BACK_ROUTE_IN_TRANSIT
+              - BACK_ROUTE_ON_DELIVERY
+              - BACK_ROUTE_DELIVERED
+              - BACK_ROUTE_ROUTE_DENIED
+              - BACK_ROUTE_DESTROYED
+              - LOST
+        statusDate:
+          $ref: '#/components/schemas/AvitoDelivery-eventDateTime'
+        comment:
+          type: string
+          title:  Комментарий
+          description: комментарий к статусу. Например - "не понравился цвет", "пытался подменить товар"
+
+
+    DeliverySetReply:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/AvitoDeliveryError'
+        data:
+          type: object
+          properties:
+            status:
+              title: статус сохранения статуса
+              description: <br />
+                `success` - статус успешно добавлен <br />
+                `duplicate` - статус уже передавался до этого <br />
+              enum:
+                - success
+                - duplicate
+
+
+
+    DeliverySetOrderPropertiesRequest:
+      type: object
+      properties:
+        orderId:
+          $ref: '#/components/schemas/AvitoDelivery-orderId'
+        propertiess:
+          $ref: '#/components/schemas/AvitoDelivery-weightAndSize'
+
+
+    DeliverySetOrderPropertiesReply:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/AvitoDeliveryError'
+        data:
+          type: object
+          properties:
+            status:
+              title: статус сохранения свойств заказа
+              description: <br />
+                `success` - свойства успешно сохранены <br />
+                `duplicate` - свойства заказа были переданы ранее и текущий запрос был проигнорирован <br />
+              enum:
+                - success
+                - duplicate
+
+    DeliverySetOrderRealAddresseReply:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/AvitoDeliveryError'
+        data:
+          type: object
+          properties:
+            status:
+              title: статус сохранения адреса заказа
+              description: <br />
+                `success` - адрес успешно сохранен <br />
+                `duplicate` - адрес заказа был переданы ранее и текущий запрос был проигнорирован <br />
+              enum:
+                - success
+                - duplicate
+
+
+    DeliverySeRealAddresseRequest:
+      type: object
+      properties:
+        orderId:
+          $ref: '#/components/schemas/AvitoDelivery-orderId'
+        address:
+          type: object
+          properties:
+            terminalType:
+              title: Тип Адреса
+              description: |
+                Тип адреса который передаётся <br />
+                - `DIRECT_ROUTE_RECEIVED` - фактический адрес приёма посылки от продавца
+              enum:
+                - DIRECT_ROUTE_RECEIVED
+            terminalNumber:
+              title: Идентификатор ПВЗ в службе доставки
+              description: Идентификатор ПВЗ в службе доставки, должен быть равен идентификатору ПВЗ передаваемому при загрузке терминалов
+              type: string
+              example: 234mlkh
+
+
+
     AvitoDeliveryPaginationMeta:
       description: Тут дешевая пагинация спроектированная с учетом того, что в базе много записей, но фактически нет паралельного пишущих и читающих клиентов
 
@@ -1121,6 +1398,43 @@ components:
           $ref: '#/components/schemas/AvitoDeliveryWorkTime'
         restriction:
           $ref: '#/components/schemas/AvitoDeliveryRestrictionZone'
+
+    AvitoDelivery-dimensions:
+      title: Габариты
+      description: |
+        Габариты в сантиметрах. В порядке длина(length), высота(height), ширина(width). <br />
+        В случае если для отправления не имеет значения можно ли его вращать - нужно отсортировать от большего к меньшему
+      type: array
+      items:
+        type: integer
+        example: 12
+
+    AvitoDelivery-weght:
+      title: вес
+      description: вес в граммах
+      example: 1000
+
+    AvitoDelivery-weightAndSize:
+      type: object
+      properties:
+        weight:
+          $ref: '#/components/schemas/AvitoDelivery-weght'
+        dimensions:
+          $ref: '#/components/schemas/AvitoDelivery-dimensions'
+
+    AvitoDelivery-eventDateTime:
+      title: Дата и время в формате rfc3339
+      description: Дата и время события
+      type: string
+      example: 1985-04-12T23:20:50.52Z
+
+
+    AvitoDelivery-orderId:
+      description: Присваивается на стороне Авито и передается в службу доставки при создании заказа
+      title: Id заказа в Авито
+      type: integer
+      example: 987547235473249087
+
 
     AvitoDelivery-orderIdentifier:
       type: object
