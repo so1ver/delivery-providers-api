@@ -193,20 +193,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeliverySetStatusReply'
-        400:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AvitoDeliveryValidationError'
         401:
           $ref: '#/components/responses/Unauthorized'
+        403:
+          $ref: '#/components/responses/Forbidden'
         500:
-          description: ServerError
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
       requestBody:
         content:
           application/json:
@@ -237,20 +229,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeliverySetOrderPropertiesReply'
-        400:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AvitoDeliveryValidationError'
         401:
           $ref: '#/components/responses/Unauthorized'
+        403:
+          $ref: '#/components/responses/Forbidden'
         500:
-          description: ServerError
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
       requestBody:
         content:
           application/json:
@@ -279,20 +263,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeliverySetOrderPropertiesReply'
-        400:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AvitoDeliveryValidationError'
         401:
           $ref: '#/components/responses/Unauthorized'
+        403:
+          $ref: '#/components/responses/Forbidden'
         500:
-          description: ServerError
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
       requestBody:
         content:
           application/json:
@@ -440,10 +416,10 @@ paths:
                     title: id задачи на обновление пунктов выдачи
                     description: По данному номеру можно [получить](#operation/getAddPickupPointsTask) статус задачи на обновление пунктов выдачи, и список ошибок по ПВЗ обновление которые завершилось ошбкой
                     example: 1233432
-        400:
-          $ref: '#/components/responses/BadRrequest'
         401:
           $ref: '#/components/responses/Unauthorized'
+        403:
+          $ref: '#/components/responses/Forbidden'
         500:
           $ref: '#/components/responses/InternalServerError'
 
@@ -581,8 +557,18 @@ components:
         type: string
 
   responses:
+
     Unauthorized:
-      description: unauthorized
+      description: Требуется аутентификация
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                $ref: '#/components/schemas/AvitoDeliveryError'
+    Forbidden:
+      description: Неверный Token/Oauth Scope
       content:
         application/json:
           schema:
@@ -743,7 +729,7 @@ components:
       properties:
         orderId:
           $ref: '#/components/schemas/AvitoDelivery-orderId'
-        propertiess:
+        properties:
           $ref: '#/components/schemas/AvitoDelivery-weightAndSize'
 
 
